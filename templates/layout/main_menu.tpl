@@ -1,3 +1,5 @@
 <nav id="main-navi">
-[@content]
+	<ul>
+		[@content]
+	</ul>
 </nav>

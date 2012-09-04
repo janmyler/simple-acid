@@ -1,0 +1,3 @@
+<h3>Proč PR články?</h3>
+<p>PR články jsou formou propagace určitého produktu, obchodu, webu, služby atd. na tematicky zaměřených webech. V současnosti se PR články využívají i pro zisk zpětných odkazů, které jsou velmi důležitým faktorem SEO optimalizace Vašeho webu.</p>
+<p>Zjednodušeně řečeno propagujete své zboží nebo službu a zároveň vhodně zvoleným textem se zpětnými odkazy promlouváte k robotu-vyhledávači a v podstatě ho navádíte na své webové stránky a pomáháte jim k vyššímu umístění ve vyhledávači.</p>

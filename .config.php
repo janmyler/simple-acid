@@ -40,14 +40,42 @@ $langCode = array(
 );
 
 // pages config
-$pages = array(
-	array(
-		"url"         => "",
-		"caption"     => "Home",
-		"title"       => "Home",
-		"description" => "",
-		"keywords"    => "",
-		"template"    => "home.tpl",
+$pages = array(	// TODO: second a third level subpages?
+	"cz" => array(
+		"" => array(
+			"url"         => "",
+			"caption"     => "Úvod",
+			"title"       => "Úvod",
+			"description" => "",
+			"keywords"    => "",
+			"template"    => "uvod.tpl",
+		),
+		"o-nas" => array(
+			"url"         => "",
+			"caption"     => "O nás",
+			"title"       => "O nás",
+			"description" => "",
+			"keywords"    => "",
+			"template"    => "o_nas.tpl",
+		),
+	),
+	"en" => array(
+		"" => array(
+			"url"         => "",
+			"caption"     => "Home",
+			"title"       => "Home",
+			"description" => "",
+			"keywords"    => "",
+			"template"    => "home.tpl",
+		),
+		"about-us" => array(
+			"url"         => "",
+			"caption"     => "About Us",
+			"title"       => "About Us",
+			"description" => "",
+			"keywords"    => "",
+			"template"    => "about_us.tpl",
+		),
 	),
 );
 
@@ -65,6 +93,6 @@ $msg = array(
 );
 
 // outputs messages in particular language
-function _T($code) {
-
+function _t($code) {
+	return (array_key_exists($code, $GLOBALS["msg"])) ? $msg[$code][$web->getLang] : "";
 }
