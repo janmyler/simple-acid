@@ -43,7 +43,6 @@ $langCode = array(
 $pages = array(	// TODO: second a third level subpages?
 	"cz" => array(
 		"" => array(
-			"url"         => "",
 			"caption"     => "Úvod",
 			"title"       => "Úvod",
 			"description" => "",
@@ -51,7 +50,6 @@ $pages = array(	// TODO: second a third level subpages?
 			"template"    => "uvod.tpl",
 		),
 		"o-nas" => array(
-			"url"         => "",
 			"caption"     => "O nás",
 			"title"       => "O nás",
 			"description" => "",
@@ -61,7 +59,6 @@ $pages = array(	// TODO: second a third level subpages?
 	),
 	"en" => array(
 		"" => array(
-			"url"         => "",
 			"caption"     => "Home",
 			"title"       => "Home",
 			"description" => "",
@@ -69,7 +66,6 @@ $pages = array(	// TODO: second a third level subpages?
 			"template"    => "home.tpl",
 		),
 		"about-us" => array(
-			"url"         => "",
 			"caption"     => "About Us",
 			"title"       => "About Us",
 			"description" => "",

@@ -150,14 +150,19 @@ class Web {
 
 	}
 
-	// TODO: render website header
 	private function header() {
+		$tpl = new Template(_TEMPLATES_DIR . "/web_header.tpl");
 
+		$tpl->set('title', _TITLE);
+		$tpl->set('caption', _TITLE);
+
+		return $tpl->output();
 	}
 
-	// TODO: render website footer
 	private function footer() {
+		$tpl = new Template(_TEMPLATES_DIR . "/web_footer.tpl");
 
+		return $tpl->output();
 	}
 
 	// TODO: render website content
@@ -167,12 +172,9 @@ class Web {
 
 	// TODO: render website sidebar
 	private function sidebar() {
+		$tpl = new Template(_TEMPLATES_DIR . "/web_sidebar.tpl");
 
-	}
-
-	// TODO: render whole page layout! yeah! ^^
-	public function render() {
-		echo $this->mainMenu();
+		// code may be changes as needed
 		$custom = array(
 			"en" => array(
 				"#cabinets" => array(
@@ -211,7 +213,15 @@ class Web {
 				),
 			),
 		);
-		echo $this->sidebarMenu(0, $custom, "products-subnav");
+		$tpl->set('menu', $this->sidebarMenu(0, $custom, "products-subnav"));
+
+		return $tpl->output();
+	}
+
+	// TODO: render whole page layout! yeah! ^^
+	public function render() {
+		echo $this->mainMenu();
+		echo $this->sidebar();
 		echo $this->footerMenu();
 	}
 }
