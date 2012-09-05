@@ -104,8 +104,39 @@ class Web {
 		return $tpl->output();
 	}
 
-	// TODO: render perhaps second or third level or supply custom links via array
-	private function sidebarMenu() {
+
+	/* array(
+	 *	 'lang' => array('url' => array('class' => "", "caption" => ""),),
+	 * );
+	 */
+	private function sidebarMenu($level = 2, $custom = null, $id = "") {
+		$tpl = new Template(_TEMPLATES_DIR . "/side_submenu.tpl");
+
+		// set custom id
+		if (!empty($id)) {
+			$tpl->set('id', $id);
+		}
+
+		// build custom menu
+		if (is_array($custom)) {
+			foreach ($custom[$this->lang] as $url => $page) {
+				$item = new Template(_TEMPLATES_DIR . "/menu_row.tpl");
+
+				$item->setValues(array(
+					"url" => $url,
+					"caption" => $page["caption"],
+					"active" => $page["class"],
+				));
+
+				$items[] = $item;
+			}
+
+			$tpl->set("content", Template::merge($items));
+			return $tpl->output();
+		}
+
+		// build normal submenu
+		// TODO: build normal submenu
 
 	}
 
@@ -142,6 +173,45 @@ class Web {
 	// TODO: render whole page layout! yeah! ^^
 	public function render() {
 		echo $this->mainMenu();
+		$custom = array(
+			"en" => array(
+				"#cabinets" => array(
+					"caption" => "Cabinets",
+					"class" => "active",
+				),
+				"#countertops" => array(
+					"caption" => "Countertops",
+					"class" => "",
+				),
+				"#fixtures" => array(
+					"caption" => "Fixtures",
+					"class" => "",
+				),
+				"#tile" => array(
+					"caption" => "Tile",
+					"class" => "",
+				),
+			),
+			"cz" => array(
+				"#skrine" => array(
+					"caption" => "Skříně",
+					"class" => "active",
+				),
+				"#policky" => array(
+					"caption" => "Poličky",
+					"class" => "",
+				),
+				"#kdovico" => array(
+					"caption" => "Kdovíco",
+					"class" => "",
+				),
+				"#nevim" => array(
+					"caption" => "Nevím",
+					"class" => "",
+				),
+			),
+		);
+		echo $this->sidebarMenu(0, $custom, "products-subnav");
 		echo $this->footerMenu();
 	}
 }
