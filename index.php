@@ -21,7 +21,7 @@ $web = Web::getInstance();
 $web->setPath($path);
 
 // set requested website language
-if (isset($_GET["lang"]) && in_array($_GET["lang"], $langs)) {
+if (isset($_GET["lang"]) && array_key_exists($_GET["lang"], $langs)) {
 	$web->setLang($_GET["lang"]);
 }
 

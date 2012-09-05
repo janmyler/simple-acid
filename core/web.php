@@ -59,8 +59,49 @@ class Web {
 		return $this->path;
 	}
 
+	public function getPathTo($endKey = "") {
+		$path = "/" . ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
+
+		foreach ($this->path as $key => $val) {
+			$path .= "/" . $val;
+			if ($key === $endKey ) {
+				break;
+			}
+		}
+
+		return $path;
+	}
+
 	public function getLang() {
 		return $this->lang;
+	}
+
+	private function getPageHash($page = null) {
+		if (is_null($page)) {
+			$page = $this->path["page"];
+		}
+
+		return $GLOBALS["pages"][$this->lang][$page]["hash"];
+	}
+
+	private function getPageCaption($page) {
+		return $GLOBALS["pages"][$this->lang][$page]["caption"];
+	}
+
+	private function hashToPage($hash, $lang) {
+		// lang and hash must be defined
+		if (empty($lang) || empty($hash)) {
+			return "";
+		}
+
+		foreach ($GLOBALS["pages"][$lang] as $url => $page) {
+			if ($page["hash"] === $hash) {
+				return $url;
+			}
+		}
+
+		// return 'homepage' link if no url was found
+		return "";
 	}
 
 	// TODO: enable two or three level menu rendering
@@ -68,7 +109,7 @@ class Web {
 		$tpl = new Template(_TEMPLATES_DIR . "/main_menu.tpl");
 
 		foreach ($GLOBALS["pages"][$this->lang] as $url => $page) {
-			$item = new Template(_TEMPLATES_DIR . "/menu_row.tpl");
+			$item = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
 			$prefix = ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
 
 			$item->setValues(array(
@@ -88,7 +129,7 @@ class Web {
 		$tpl = new Template(_TEMPLATES_DIR . "/footer_menu.tpl");
 
 		foreach ($GLOBALS["pages"][$this->lang] as $url => $page) {
-			$item = new Template(_TEMPLATES_DIR . "/menu_row.tpl");
+			$item = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
 			$prefix = ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
 
 			$item->setValues(array(
@@ -120,7 +161,7 @@ class Web {
 		// build custom menu
 		if (is_array($custom)) {
 			foreach ($custom[$this->lang] as $url => $page) {
-				$item = new Template(_TEMPLATES_DIR . "/menu_row.tpl");
+				$item = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
 
 				$item->setValues(array(
 					"url" => $url,
@@ -141,13 +182,69 @@ class Web {
 	}
 
 	// TODO: render breadcrumbs path
-	private function breadcrumbs() {
+	private function breadcrumbs($sep = "::") {
+		$tpl = new Template(_TEMPLATES_DIR . "/breadcrumbs.tpl");
+		$content = "";
+		$offsetKey = "";
 
+		// find last non empty path item
+		foreach ($this->path as $key => $pth) {
+			if ($key === "page" || !empty($pth)) {
+				$offsetKey = $key;
+			} else {
+				break;
+			}
+		}
+
+		// build breadcrumbs
+		foreach ($this->path as $key => $pth) {
+			if ($key !== $offsetKey) {
+				$item = new Template(_TEMPLATES_DIR . "/breadcrumbs_item.tpl");
+				$item->setValues(array(
+					"url" => $this->getPathTo($key),
+					"caption" => $this->getPageCaption($pth),
+				));
+
+				$content .= $item->output() . " " . $sep . " ";
+			} else {
+				$content .= $this->getPageCaption($pth);
+				break;
+			}
+		}
+
+		$tpl->set("content", $content);
+		return $tpl->output();
 	}
 
 	// TODO: render language switcher (if more langs are available)
 	private function langSwitch() {
+		$tpl = new Template(_TEMPLATES_DIR . "/lang_switcher.tpl");
 
+		// TODO: da se nejak udelat zachovani #anchor casti adresy? asi ne co? -____-
+
+		foreach ($GLOBALS["langs"] as $langCode => $langInfo) {
+			$item = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
+
+			// get proper language prefix
+			$url = ((_DEF_LANG !== $langCode) ? "/" . $langCode : "");
+
+			// get proper language page code
+			$hash = $this->getPageHash();
+			$url .= "/" . $this->hashToPage($hash, $langCode);
+			$url .= (!empty($this->path["param1"])) ? "/" . $this->path["param1"] : "";
+			$url .= (!empty($this->path["param2"])) ? "/" . $this->path["param2"] : "";
+
+			$item->setValues(array(
+				"url" => $url,
+				"caption" => $langInfo["title"],
+				"active" => ($langCode === $this->lang) ? "active" : "",
+			));
+
+			$items[] = $item;
+		}
+
+		$tpl->set("content", Template::merge($items));
+		return $tpl->output();
 	}
 
 	private function header() {
@@ -220,8 +317,12 @@ class Web {
 
 	// TODO: render whole page layout! yeah! ^^
 	public function render() {
+
 		echo $this->mainMenu();
-		echo $this->sidebar();
-		echo $this->footerMenu();
+		echo $this->langSwitch();
+		// echo $this->sidebar();
+		// echo $this->footerMenu();
+		echo $this->breadcrumbs();
+
 	}
 }

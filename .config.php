@@ -31,12 +31,15 @@ define("_OLD_IE", false);
 define("_DEF_LANG", "en");
 
 // webpage supported languages
-$langs = array("cz", "en");
-
-// language codes
-$langCode = array(
-	"cz" => "cs-cz",
-	"en" => "en-us",
+$langs = array(
+	"cz" => array(
+		"title" => "Česky",
+		"code" => "cs-cz",
+	),
+	"en" => array(
+		"title" => "English",
+		"code" => "en-us",
+	),
 );
 
 // pages config
@@ -48,6 +51,7 @@ $pages = array(	// TODO: second a third level subpages?
 			"description" => "",
 			"keywords"    => "",
 			"template"    => "uvod.tpl",
+			"hash"        => ":home",
 		),
 		"o-nas" => array(
 			"caption"     => "O nás",
@@ -55,6 +59,15 @@ $pages = array(	// TODO: second a third level subpages?
 			"description" => "",
 			"keywords"    => "",
 			"template"    => "o_nas.tpl",
+			"hash"        => ":about-us",
+		),
+		"kontakt" => array(
+			"caption"     => "Kontakt",
+			"title"       => "Kontakt",
+			"description" => "",
+			"keywords"    => "",
+			"template"    => "kontakt.tpl",
+			"hash"        => ":contact-us",
 		),
 	),
 	"en" => array(
@@ -64,6 +77,7 @@ $pages = array(	// TODO: second a third level subpages?
 			"description" => "",
 			"keywords"    => "",
 			"template"    => "home.tpl",
+			"hash"        => ":home",
 		),
 		"about-us" => array(
 			"caption"     => "About Us",
@@ -71,6 +85,15 @@ $pages = array(	// TODO: second a third level subpages?
 			"description" => "",
 			"keywords"    => "",
 			"template"    => "about_us.tpl",
+			"hash"        => ":about-us",
+		),
+		"contact-us" => array(
+			"caption"     => "Contact Us",
+			"title"       => "Contact Us",
+			"description" => "",
+			"keywords"    => "",
+			"template"    => "contact_us.tpl",
+			"hash"        => ":contact-us",
 		),
 	),
 );
