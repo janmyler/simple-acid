@@ -104,24 +104,71 @@ class Web {
 		return "";
 	}
 
-	// TODO: enable two or three level menu rendering
-	private function mainMenu() {
+	private function mainMenu($maxLevel = 1, $showAll = false) {
 		$tpl = new Template(_TEMPLATES_DIR . "/main_menu.tpl");
+		$prefix = ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
 
-		foreach ($GLOBALS["pages"][$this->lang] as $url => $page) {
-			$item = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
-			$prefix = ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
+		foreach ($GLOBALS["pages"][$this->lang] as $url1 => $page1) {
+			$item1 = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
+			$level = 1;
+			$tpl2 = null;
 
-			$item->setValues(array(
-				"url" => $prefix . "/" . $url,
-				"caption" => $page["caption"],
-				"active" => ($url === $this->path["page"]) ? "active" : "",
+			if ($level < $maxLevel && isset($page1["sub"]) && is_array($page1["sub"])) {
+				if ($showAll || $url1 === $this->path["page"]) {
+					$tpl2 = new Template(_TEMPLATES_DIR . "/second_submenu.tpl");
+
+					foreach ($page1["sub"] as $url2 => $page2) {
+						$item2 = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
+						$level = 2;
+						$tpl3 = null;
+
+						if ($level < $maxLevel && isset($page2["sub"]) && is_array($page2["sub"])) {
+							if ($showAll || $url2 === $this->path["param1"]) {
+								$tpl3 = new Template(_TEMPLATES_DIR . "/third_submenu.tpl");
+
+								foreach ($page2["sub"] as $url3 => $page3) {
+									$item3 = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
+									$level = 3;
+
+									$item3->setValues(array(
+										"url" => $prefix . "/" . $url1 . "/" . $url2 . "/" . $url3,
+										"caption" => $page3["caption"],
+										"active" => ($url3 === $this->path["param2"]) ? "active" : "",
+										"append" => "",
+									));
+
+									$items3[] = $item3;
+								}
+
+								$tpl3->set("content", Template::merge($items3));
+							}
+						}
+
+						$item2->setValues(array(
+							"url" => $prefix . "/" . $url1 . "/" . $url2,
+							"caption" => $page2["caption"],
+							"active" => ($url2 === $this->path["param1"]) ? "active" : "",
+							"append" => (!is_null($tpl3)) ? $tpl3->output() : "",
+						));
+
+						$items2[] = $item2;
+					}
+
+					$tpl2->set("content", Template::merge($items2));
+				}
+			}
+
+			$item1->setValues(array(
+				"url" => $prefix . "/" . $url1,
+				"caption" => $page1["caption"],
+				"active" => ($url1 === $this->path["page"]) ? "active" : "",
+				"append" => (!is_null($tpl2)) ? $tpl2->output() : "",
 			));
 
-			$items[] = $item;
+			$items1[] = $item1;
 		}
 
-		$tpl->set("content", Template::merge($items));
+		$tpl->set("content", Template::merge($items1));
 		return $tpl->output();
 	}
 
@@ -136,6 +183,7 @@ class Web {
 				"url" => $prefix . "/" . $url,
 				"caption" => $page["caption"],
 				"active" => ($url === $this->path["page"]) ? "active" : "",
+				"append" => "", // TODO: append
 			));
 
 			$items[] = $item;
@@ -167,6 +215,7 @@ class Web {
 					"url" => $url,
 					"caption" => $page["caption"],
 					"active" => $page["class"],
+					"append" => "", // TODO: append
 				));
 
 				$items[] = $item;
@@ -238,6 +287,7 @@ class Web {
 				"url" => $url,
 				"caption" => $langInfo["title"],
 				"active" => ($langCode === $this->lang) ? "active" : "",
+				"append" => "",
 			));
 
 			$items[] = $item;
@@ -318,7 +368,7 @@ class Web {
 	// TODO: render whole page layout! yeah! ^^
 	public function render() {
 
-		echo $this->mainMenu();
+		echo $this->mainMenu(3, true);
 		echo $this->langSwitch();
 		// echo $this->sidebar();
 		// echo $this->footerMenu();
