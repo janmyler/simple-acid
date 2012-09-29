@@ -60,11 +60,16 @@ class Web {
 	}
 
 	public function getPathTo($endKey = "") {
-		$path = "/" . ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
+		$path = ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
 
 		foreach ($this->path as $key => $val) {
+			if (empty($val)) {
+				break;
+			}
+
 			$path .= "/" . $val;
-			if ($key === $endKey ) {
+
+			if ($key === $endKey) {
 				break;
 			}
 		}
@@ -76,16 +81,45 @@ class Web {
 		return $this->lang;
 	}
 
-	private function getPageHash($page = null) {
-		if (is_null($page)) {
-			$page = $this->path["page"];
+	private function getPageHash($path = null) {
+		if (is_null($path)) {
+			$path = $this->getPathTo();
+		}
+		$offset = (_DEF_LANG !== $this->lang) ? strpos($path, '/', 1) + 1 : 1;
+		$path = substr($path, $offset);
+		$path = explode('/', $path);
+
+		$page = null;
+		foreach ($path as $pth) {
+			if (is_null($page)) {
+				$page = $GLOBALS["pages"][$this->lang][$pth];
+			} else {
+				$page = $page["sub"][$pth];
+			}
 		}
 
-		return $GLOBALS["pages"][$this->lang][$page]["hash"];
+		return $page["hash"];
 	}
 
-	private function getPageCaption($page) {
-		return $GLOBALS["pages"][$this->lang][$page]["caption"];
+	private function getPageCaption($path = null) {
+		if (is_null($path)) {
+			$path = $this->getPathTo();
+		}
+
+		$offset = (_DEF_LANG !== $this->lang) ? strpos($path, '/', 1) + 1 : 1;
+		$path = substr($path, $offset);
+		$path = explode('/', $path);
+
+		$page = null;
+		foreach ($path as $pth) {
+			if (is_null($page)) {
+				$page = $GLOBALS["pages"][$this->lang][$pth];
+			} else {
+				$page = $page["sub"][$pth];
+			}
+		}
+
+		return $page["caption"];
 	}
 
 	private function hashToPage($hash, $lang) {
@@ -94,14 +128,32 @@ class Web {
 			return "";
 		}
 
-		foreach ($GLOBALS["pages"][$lang] as $url => $page) {
-			if ($page["hash"] === $hash) {
-				return $url;
+		$path = "";
+		$offset = strpos($hash, ":", 1);
+		$offset = $offset ? $offset : strlen($hash);
+		$pages = $GLOBALS["pages"][$lang];
+
+		while (!empty($pages)) {
+			$url = key($pages);
+			$page = array_shift($pages);
+
+			if ($page["hash"] === substr($hash, 0, $offset)) {
+				$path .= "/" . $url;
+				$pages = isset($page["sub"]) ? $page['sub'] : array();
+
+				if ($offset === strlen($hash)) {
+					break;
+				} elseif ($offset < strlen($hash)) {
+					$offset = strpos($hash, ":", ++$offset);
+				}
+
+				if (!$offset) {
+					$offset = strlen($hash);
+				}
 			}
 		}
 
-		// return 'homepage' link if no url was found
-		return "";
+		return $path;
 	}
 
 	private function mainMenu($maxLevel = 1, $showAll = false) {
@@ -193,11 +245,6 @@ class Web {
 		return $tpl->output();
 	}
 
-
-	/* array(
-	 *	 'lang' => array('url' => array('class' => "", "caption" => ""),),
-	 * );
-	 */
 	private function sidebarMenu($level = 2, $custom = null, $id = "") {
 		$tpl = new Template(_TEMPLATES_DIR . "/side_submenu.tpl");
 
@@ -230,7 +277,6 @@ class Web {
 
 	}
 
-	// TODO: render breadcrumbs path
 	private function breadcrumbs($sep = "::") {
 		$tpl = new Template(_TEMPLATES_DIR . "/breadcrumbs.tpl");
 		$content = "";
@@ -247,16 +293,18 @@ class Web {
 
 		// build breadcrumbs
 		foreach ($this->path as $key => $pth) {
+			$path = $this->getPathTo($key);
+
 			if ($key !== $offsetKey) {
 				$item = new Template(_TEMPLATES_DIR . "/breadcrumbs_item.tpl");
 				$item->setValues(array(
-					"url" => $this->getPathTo($key),
-					"caption" => $this->getPageCaption($pth),
+					"url" => $path,
+					"caption" => $this->getPageCaption($path),
 				));
 
 				$content .= $item->output() . " " . $sep . " ";
 			} else {
-				$content .= $this->getPageCaption($pth);
+				$content .= $this->getPageCaption($path);
 				break;
 			}
 		}
@@ -265,11 +313,14 @@ class Web {
 		return $tpl->output();
 	}
 
-	// TODO: render language switcher (if more langs are available)
+	// FOXME: not working good
 	private function langSwitch() {
 		$tpl = new Template(_TEMPLATES_DIR . "/lang_switcher.tpl");
 
 		// TODO: da se nejak udelat zachovani #anchor casti adresy? asi ne co? -____-
+
+		// get proper hash
+		$hash = $this->getPageHash();
 
 		foreach ($GLOBALS["langs"] as $langCode => $langInfo) {
 			$item = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
@@ -277,11 +328,7 @@ class Web {
 			// get proper language prefix
 			$url = ((_DEF_LANG !== $langCode) ? "/" . $langCode : "");
 
-			// get proper language page code
-			$hash = $this->getPageHash();
-			$url .= "/" . $this->hashToPage($hash, $langCode);
-			$url .= (!empty($this->path["param1"])) ? "/" . $this->path["param1"] : "";
-			$url .= (!empty($this->path["param2"])) ? "/" . $this->path["param2"] : "";
+			$url .= $this->hashToPage($hash, $langCode);
 
 			$item->setValues(array(
 				"url" => $url,
@@ -367,12 +414,13 @@ class Web {
 
 	// TODO: render whole page layout! yeah! ^^
 	public function render() {
+		// test if path exists in config
 
 		echo $this->mainMenu(3, true);
 		echo $this->langSwitch();
 		// echo $this->sidebar();
 		// echo $this->footerMenu();
-		echo $this->breadcrumbs();
+		// echo $this->breadcrumbs();
 
 	}
 }

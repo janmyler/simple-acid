@@ -119,7 +119,7 @@ $pages = array(	// TODO: second a third level subpages?
 							"description" => "",
 							"keywords" => "",
 							"template" => "test.tpl",
-							"hash" => ":about-us:map:test",
+							"hash" => ":about-us:address:test",
 						),
 					),
 				),
