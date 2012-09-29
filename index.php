@@ -28,8 +28,15 @@ if (isset($_GET["lang"]) && array_key_exists($_GET["lang"], $langs)) {
 var_dump($web->getPath());
 var_dump($web->getLang());
 
+var_dump($web->pageExists());
+
 // check for error code
 $err = (isset($_GET["err"])) ? $_GET["err"] : "" ;
 $web->setError($err);
 
+if (!$web->pageExists()) {
+	$web->setError('404');
+}
+
+// display web
 echo $web->render();

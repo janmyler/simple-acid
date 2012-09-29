@@ -81,11 +81,36 @@ class Web {
 		return $this->lang;
 	}
 
+	public function pageExists() {
+		$page = $GLOBALS["pages"][$this->lang];
+
+		foreach ($this->path as $key => $val) {
+			if (($key === "page" || !empty($val)) && !isset($page[$val])) {
+				return false;
+			}
+
+			if (isset($page[$val]["sub"])) {
+				$page = $page[$val]["sub"];
+			} else {
+				$page = array();
+			}
+		}
+
+		return true;
+	}
+
 	private function getPageHash($path = null) {
 		if (is_null($path)) {
 			$path = $this->getPathTo();
 		}
-		$offset = (_DEF_LANG !== $this->lang) ? strpos($path, '/', 1) + 1 : 1;
+
+		$offset = (_DEF_LANG !== $this->lang) ? strpos($path, '/', 1) : 0;
+		if (!$offset) {
+			$offset = strlen($path);
+		} else {
+			$offset += 1;
+		}
+
 		$path = substr($path, $offset);
 		$path = explode('/', $path);
 
@@ -412,15 +437,16 @@ class Web {
 		return $tpl->output();
 	}
 
-	// TODO: render whole page layout! yeah! ^^
 	public function render() {
-		// test if path exists in config
-
-		echo $this->mainMenu(3, true);
-		echo $this->langSwitch();
-		// echo $this->sidebar();
-		// echo $this->footerMenu();
-		// echo $this->breadcrumbs();
-
+		// test for the errors
+		if (!empty($this->err)) {
+			echo $this->handleErr();
+		} else {
+			echo $this->mainMenu(3, true);
+			echo $this->langSwitch();
+			// echo $this->breadcrumbs();
+			// echo $this->sidebar();
+			// echo $this->footerMenu();
+		}
 	}
 }
