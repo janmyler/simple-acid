@@ -126,7 +126,7 @@ class Web {
 		return $page["hash"];
 	}
 
-	private function getPageCaption($path = null) {
+	private function getPageInfo($path = null) {
 		if (is_null($path)) {
 			$path = $this->getPathTo();
 		}
@@ -144,6 +144,16 @@ class Web {
 			}
 		}
 
+		return array(
+			"caption" => $page["caption"],
+			"title" => $page["title"],
+			"description" => $page["description"],
+			"keywords" => $page["keywords"],
+		);
+	}
+
+	private function getPageCaption($path = null) {
+		$page = $this->getPageInfo($path);
 		return $page["caption"];
 	}
 
@@ -381,7 +391,20 @@ class Web {
 	private function footer() {
 		$tpl = new Template(_TEMPLATES_DIR . "/web_footer.tpl");
 
+		$tpl->set("bottom-menu", $this->footerMenu());
+
 		return $tpl->output();
+	}
+
+	private function gaSnippet() {
+		if (_GA !== "") {
+			$tpl = new Template(_TEMPLATES_DIR . "/ga_snippet.tpl");
+			$tpl->set("ua", _GA);
+
+			return $tpl->output();
+		} else {
+			return "";
+		}
 	}
 
 	// TODO: render website content
@@ -437,16 +460,50 @@ class Web {
 		return $tpl->output();
 	}
 
+	public function error() {
+		return $this->err();
+	}
+
 	public function render() {
 		// test for the errors
 		if (!empty($this->err)) {
-			echo $this->handleErr();
+			return $this->error();
 		} else {
-			echo $this->mainMenu(3, true);
-			echo $this->langSwitch();
+			$tpl = new Template(_TEMPLATES_DIR . "/layout.tpl");
+			$page = $this->getPageInfo();
+
+			// set header values
+			$tpl->setValues(array(
+				'lang' => $GLOBALS['langs'][$this->lang]['code'],
+				'title' => $page["title"] . ' | ' . _TITLE,
+				'author' => _AUTHOR,
+				'description' => (!empty($page["description"]) ? $page["description"] : _DESCRIPTION),
+				'keywords' => (!empty($page["keywords"]) ? $page["keywords"] : _KEYWORDS),
+				'analytics-snippet' => $this->gaSnippet(),
+			));
+
+			if (_OLD_IE) {
+				$tpl->set("oldIE", '<!--[if lt IE 7]><p class="chromeframe">Your browser is <em>ancient!</em> <a href="http://browsehappy.com/">Upgrade to a different browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to experience this site.</p><![endif]-->');
+			} else {
+				$tpl->set("oldIE", "");
+			}
+
+			$tpl->setValues(array(
+				"header" => $this->header(),
+				"footer" => $this->footer(),
+				// "content" =>
+
+			));
+
+			return $tpl->output();
+
+			// echo $this->header();
+			// echo $this->mainMenu(3, true);
+			// echo $this->langSwitch();
 			// echo $this->breadcrumbs();
 			// echo $this->sidebar();
 			// echo $this->footerMenu();
+			// echo $this->footer();
 		}
 	}
 }

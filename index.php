@@ -25,10 +25,9 @@ if (isset($_GET["lang"]) && array_key_exists($_GET["lang"], $langs)) {
 	$web->setLang($_GET["lang"]);
 }
 
-var_dump($web->getPath());
-var_dump($web->getLang());
-
-var_dump($web->pageExists());
+// var_dump($web->getPath());
+// var_dump($web->getLang());
+// var_dump($web->pageExists());
 
 // check for error code
 $err = (isset($_GET["err"])) ? $_GET["err"] : "" ;
