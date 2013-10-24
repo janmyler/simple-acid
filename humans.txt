@@ -13,7 +13,7 @@
 /* TEAM */
   Creator & Maintainer: Jan Myler aka AcID
   Site: http://janmyler.com
-  E-Mail: info[at]janmyler.com
+  E-Mail: info@janmyler.com
   Twitter: janmyler
   Location: Brno, Czech Republic
 
