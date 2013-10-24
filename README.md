@@ -13,6 +13,13 @@ Contains a PHP template class which provides content replacing in page templates
 
 ## Features
 
+### v0.8
+* added Gallery class (based on file system only)
+
+### v0.7
+* updated Template class (added support for inline templates)
+* added simple Form class (validation, email sending)
+
 ### v0.6
 * SASS styles with configuration (Compass supported)
 * using Normalize SASS module
