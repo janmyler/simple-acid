@@ -10,6 +10,7 @@
  */
 
 require_once("core/template.php");
+require_once("core/gallery.php");
 
 class Web {
 	private static $instance;
@@ -22,6 +23,7 @@ class Web {
 			"page"   => "",
 			"param1" => "",
 			"param2" => "",
+			"param3" => "",
 		);
 
 		$this->lang = _DEF_LANG;
@@ -59,7 +61,7 @@ class Web {
 		return $this->path;
 	}
 
-	public function getPathTo($endKey = "") {
+	public function getPathTo($endKey = "", $firstSlash = true) {
 		$path = ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
 
 		foreach ($this->path as $key => $val) {
@@ -74,6 +76,10 @@ class Web {
 			}
 		}
 
+		if (!$firstSlash) {
+			$path = substr($path, 1);
+		}
+
 		return $path;
 	}
 
@@ -82,7 +88,20 @@ class Web {
 	}
 
 	public function pageExists() {
+		if (!array_key_exists($this->lang, $GLOBALS["langs"])) {
+			return false;
+		}
+
 		$page = $GLOBALS["pages"][$this->lang];
+
+		// exception for the gallery pages
+		if ($this->path['page'] === 'gallery') {
+			if (!empty($this->path['param1']) && !isset($page["gallery"]["sub"][$this->path["param1"]])) {
+				return false;
+			}
+
+			return true;
+		}
 
 		foreach ($this->path as $key => $val) {
 			if (($key === "page" || !empty($val)) && !isset($page[$val])) {
@@ -105,11 +124,7 @@ class Web {
 		}
 
 		$offset = (_DEF_LANG !== $this->lang) ? strpos($path, '/', 1) : 0;
-		if (!$offset) {
-			$offset = strlen($path);
-		} else {
-			$offset += 1;
-		}
+		$offset += 1;
 
 		$path = substr($path, $offset);
 		$path = explode('/', $path);
@@ -135,21 +150,38 @@ class Web {
 		$path = substr($path, $offset);
 		$path = explode('/', $path);
 
+		// remove the language part of the path (if is set)
+		if (array_key_exists($path[0], $GLOBALS['langs'])) {
+			array_shift($path);
+		}
+
 		$page = null;
 		foreach ($path as $pth) {
 			if (is_null($page)) {
 				$page = $GLOBALS["pages"][$this->lang][$pth];
 			} else {
-				$page = $page["sub"][$pth];
+				// gallery pages exception
+				if ($this->path['page'] === 'gallery' && $pth === $this->path['param2']) {
+					$page = $page;
+				} else {
+					$page = $page["sub"][$pth];
+				}
 			}
 		}
 
-		return array(
+		$info = array(
 			"caption" => $page["caption"],
 			"title" => $page["title"],
 			"description" => $page["description"],
 			"keywords" => $page["keywords"],
+			"template" => $page["template"],
 		);
+
+		if (isset($page["custom"])) {
+			$info["custom"] = $page["custom"];
+		}
+
+		return $info;
 	}
 
 	private function getPageCaption($path = null) {
@@ -245,6 +277,11 @@ class Web {
 				}
 			}
 
+			// skip hidden items
+			if (isset($page1["hidden"]) && $page1["hidden"]) {
+				continue;
+			}
+
 			$item1->setValues(array(
 				"url" => $prefix . "/" . $url1,
 				"caption" => $page1["caption"],
@@ -273,6 +310,11 @@ class Web {
 				"append" => "", // TODO: append
 			));
 
+			// skip hidden items
+			if (isset($page["hidden"]) && $page["hidden"]) {
+				continue;
+			}
+
 			$items[] = $item;
 		}
 
@@ -291,12 +333,13 @@ class Web {
 		// build custom menu
 		if (is_array($custom)) {
 			foreach ($custom[$this->lang] as $url => $page) {
-				$item = new Template(_TEMPLATES_DIR . "/menu_item.tpl");
+				$item = new Template('<li class="[@class]">&rsaquo; <a href="[@url]" class="[@active]">[@caption]</a>[@append]</li>', true);
 
 				$item->setValues(array(
 					"url" => $url,
 					"caption" => $page["caption"],
 					"active" => $page["class"],
+					"class" => $page["class"],
 					"append" => "", // TODO: append
 				));
 
@@ -308,7 +351,24 @@ class Web {
 		}
 
 		// build normal submenu
-		// TODO: build normal submenu
+		// FIXME: does not work with the 'level' parameter (not even for multiple menu levels)
+		$subpages = $GLOBALS["pages"][$this->lang][$this->path['page']]['sub'];
+		foreach ($subpages as $url => $page) {
+			$item = new Template('<li>&rsaquo; <a href="[@url]" class="[@active]">[@caption]</a>[@append]</li>', true);
+			$prefix = ((_DEF_LANG !== $this->lang) ? "/" . $this->lang : "");
+
+			$item->setValues(array(
+				"url" => $prefix . "/" . $this->path['page'] . "/" . $url,
+				"caption" => $page["caption"],
+				"active" => ($url === $this->path["param1"]) ? "active" : "",
+				"append" => "", // TODO: append
+			));
+
+			$items[] = $item;
+		}
+
+		$tpl->set("content", Template::merge($items));
+		return $tpl->output();
 
 	}
 
@@ -348,7 +408,7 @@ class Web {
 		return $tpl->output();
 	}
 
-	// FOXME: not working good
+	// FIXME: not working good
 	private function langSwitch() {
 		$tpl = new Template(_TEMPLATES_DIR . "/lang_switcher.tpl");
 
@@ -393,6 +453,15 @@ class Web {
 
 		$tpl->set("bottom-menu", $this->footerMenu());
 
+		// set copyright info
+		$year = (int) date('Y');
+		if ($year > 2013) {
+			$copy = '2013&ndash;' . $year;
+		} else {
+			$copy = '2013';
+		}
+		$tpl->set('copy-years', $copy);
+
 		return $tpl->output();
 	}
 
@@ -407,103 +476,232 @@ class Web {
 		}
 	}
 
-	// TODO: render website content
-	private function content() {
+	private function indexContent() {
+		$tpl = new Template(_TEMPLATES_DIR . "/web_index.tpl");
 
+		$tpl->setValues(array(
+			'slider' => $this->slider(),
+			'sidebar' => $this->indexSidebar(),
+		));
+
+		return $tpl->output();
 	}
 
-	// TODO: render website sidebar
-	private function sidebar() {
-		$tpl = new Template(_TEMPLATES_DIR . "/web_sidebar.tpl");
+	private function pageContent() {
+		$tpl = new Template(_TEMPLATES_DIR . "/web_page.tpl");
 
-		// code may be changes as needed
-		$custom = array(
-			"en" => array(
-				"#cabinets" => array(
-					"caption" => "Cabinets",
-					"class" => "active",
-				),
-				"#countertops" => array(
-					"caption" => "Countertops",
-					"class" => "",
-				),
-				"#fixtures" => array(
-					"caption" => "Fixtures",
-					"class" => "",
-				),
-				"#tile" => array(
-					"caption" => "Tile",
-					"class" => "",
-				),
-			),
-			"cz" => array(
-				"#skrine" => array(
-					"caption" => "Skříně",
-					"class" => "active",
-				),
-				"#policky" => array(
-					"caption" => "Poličky",
-					"class" => "",
-				),
-				"#kdovico" => array(
-					"caption" => "Kdovíco",
-					"class" => "",
-				),
-				"#nevim" => array(
-					"caption" => "Nevím",
-					"class" => "",
-				),
-			),
-		);
-		$tpl->set('menu', $this->sidebarMenu(0, $custom, "products-subnav"));
+		$tpl->set('sidebar', $this->pageSidebar());
+
+		// Gallery page
+		if ($this->path['page'] === 'gallery') {
+			$gallery = new Gallery(_GALLERY_DIR, $GLOBALS['sizes']);
+			$galTpl = new Template(_TEMPLATES_DIR . "/gallery_list.tpl");
+			if (!empty($this->path['param1']) && empty($this->path['param2'])) {
+
+				$galTpl->setValues(array(
+					'caption' => $this->getPageCaption(),
+					'chooser' => $gallery->getList($this->path['param1']),
+				));
+				$galTpl->setValuesEmpty();
+
+				$tpl->set('content', $galTpl->output());
+			} else if (!empty($this->path['param2'])) {
+				$galTpl->setValues(array(
+					'caption' => $this->getPageCaption(),
+					'content' => $gallery->getGalleryName($this->path['param1'] . '/' . $this->path['param2']),
+					'gallery' => $gallery->getGallery($this->path['param1'] . '/' . $this->path['param2']),
+				));
+				$galTpl->setValuesEmpty();
+
+				// specific gallery title modification
+				if (!is_null($layoutTpl)) {
+					$page = $this->getPageInfo();
+					$galName = $gallery->getGalleryName($this->path['param1'] . '/' . $this->path['param2'], false);
+					$layoutTpl->set('title', $page["title"] . ' – ' . $galName . ' | ' . _TITLE);
+				}
+
+				$tpl->set('content', $galTpl->output());
+			}
+		}
+
+		return $tpl->output();
+	}
+
+	private function indexSidebar() {
+		$tpl = new Template(_TEMPLATES_DIR . "/web_index_sidebar.tpl");
+
+		return $tpl->output();
+	}
+
+	private function pageSidebar() {
+		$tpl = new Template(_TEMPLATES_DIR . "/web_page_sidebar.tpl");
+
+		// insert custom menu if defined
+		$page = $this->getPageInfo();
+
+		if (isset($page['custom'])) {
+			$tpl->set('menu', $this->sidebarMenu(0, $page['custom'], "products-subnav"));
+		} else if ($this->path['page'] === 'gallery') {
+			$tpl->set('menu', $this->sidebarMenu(0, null, "gallery-subnav"));
+		} else {
+			$tpl->set('menu', '');
+		}
 
 		return $tpl->output();
 	}
 
 	public function error() {
-		return $this->err();
+		$tpl = new Template(_TEMPLATES_DIR . "/web_error.tpl");
+
+		// sets header values
+		$tpl->setValues(array(
+			'lang' => $GLOBALS['langs'][$this->lang]['code'],
+			'author' => _AUTHOR,
+		));
+
+		$content  = '<img src="' . _PATH . 'img/hammer.jpg" width="478" height="411" alt="Hammer">';
+		$content .= '<div class="gray">Oops, something is broken</div>';
+
+		switch ($this->err) {
+			case 401:
+				$tpl->set('title', '401 Unauthorized | ' . _TITLE);
+				$content .= '<h1><span class="red">[401]</span> Unauthorized</h1>';
+				$content .= '<p>Sorry, you are not authorized to view this page.</p>';
+				break;
+			case 403:
+				$tpl->set('title', '403 Forbidden | ' . _TITLE);
+				$content .= '<h1><span class="red">[403]</span> Forbidden</h1>';
+				$content .= '<p>Sorry, the link you used is invalid.</p>';
+				break;
+			case 404:
+				$tpl->set('title', '404 Page not found | ' . _TITLE);
+				$content .= '<h1><span class="red">[404]</span> Page not found</h1>';
+				$content .= '<p>Sorry, but the page you are looking for cannot be found.</p>';
+				break;
+			case 500:
+				$tpl->set('title', '500 Internal error | ' . _TITLE);
+				$content .= '<h1><span class="red">[500]</span> Internal error</h1>';
+				$content .= '<p>Something terrible has happened. Help us to solve this problem by contacting the <a href="mailto:info@janmyler.com">web administrator</a>.</p>';
+				break;
+			default:
+				$tpl->set('title', 'Error | ' . _TITLE);
+				$content .= '<h1><span class="red">[o_O]</span> Unknown error</h1>';
+				$content .= '<p>Something terrible has happened. Help us to solve this problem by contacting the <a href="mailto:info@janmyler.com">web administrator</a>.</p>';
+				break;
+		}
+
+		$content .= '<p class="button"><a href="' . _PATH . '" class="small-button">Return to the homepage</a></p>';
+		$tpl->set('content', $content);
+
+		return $tpl->output();
+	}
+
+	private function debug() {
+		echo "<div class=debug>";
+
+		echo "<pre>Path: </pre>";
+		var_dump($this->getPath());
+
+		echo "<pre>Lang: </pre>";
+		var_dump($this->getLang());
+
+		echo "<pre>Exists: </pre>";
+		var_dump($this->pageExists());
+
+		echo "<pre>Err: </pre>";
+		var_dump($this->err);
+
+		echo "</div>\n";
+	}
+
+	private function preprocessContent(&$tpl) {
+		if ($this->path['page'] === 'gallery') {
+			return;
+		}
+
+		$hash = $this->getPageHash();
+		if ($hash === ':contact-us') {
+			// check the form validation
+			if (isset($_SESSION['form_info'])) {
+				$info = $_SESSION['form_info'];
+				unset($_SESSION['form_info']);
+
+				if ($info['sent'])	{
+					$tpl->set($info['type'] . '_message', $info['message']);
+				} else {
+					// var_dump($info); exit;
+
+					foreach ($info['data'] as $field => $data) {
+						$tpl->set($info['type'] . '_' . $field, $data);
+					}
+					foreach($info['errors'] as $field => $error) {
+						$tpl->set($info['type'] . '_' . $field . '_error', $error);
+						$tpl->set($info['type'] . '_' . $field . '_class', 'error');
+					}
+				}
+			}
+
+			$tpl->setValuesEmpty();
+		}
 	}
 
 	public function render() {
-		// test for the errors
+		// print debug info
+		if (_DEBUG) {
+			$this->debug();
+		}
+
+		// test for errors
 		if (!empty($this->err)) {
 			return $this->error();
 		} else {
-			$tpl = new Template(_TEMPLATES_DIR . "/layout.tpl");
+			$tpl = new Template(_TEMPLATES_DIR . "/web_layout.tpl");
 			$page = $this->getPageInfo();
 
-			// set header values
+			// sets header values
 			$tpl->setValues(array(
 				'lang' => $GLOBALS['langs'][$this->lang]['code'],
 				'title' => $page["title"] . ' | ' . _TITLE,
 				'author' => _AUTHOR,
 				'description' => (!empty($page["description"]) ? $page["description"] : _DESCRIPTION),
 				'keywords' => (!empty($page["keywords"]) ? $page["keywords"] : _KEYWORDS),
-				'analytics-snippet' => $this->gaSnippet(),
+				'url' => $this->getPathTo('', false),
 			));
 
+			// sets IE 6 warning
 			if (_OLD_IE) {
 				$tpl->set("oldIE", '<!--[if lt IE 7]><p class="chromeframe">Your browser is <em>ancient!</em> <a href="http://browsehappy.com/">Upgrade to a different browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to experience this site.</p><![endif]-->');
 			} else {
 				$tpl->set("oldIE", "");
 			}
 
+			// sets template blocks' values
 			$tpl->setValues(array(
-				"header" => $this->header(),
-				"footer" => $this->footer(),
-				// "content" =>
-
+				'header' => $this->header(),
+				'main-navi' => $this->mainMenu(),
+				'footer' => $this->footer(),
+				'analytics-snippet' => $this->gaSnippet(),
 			));
 
-			return $tpl->output();
+			// sets page's content layout
+			switch ($this->getPath('page')) {
+				case '':		// homepage
+					$content = $this->indexContent();
+					break;
+				default: 		// regular page
+					$content = $this->pageContent();
+			}
 
-			// echo $this->header();
-			// echo $this->mainMenu(3, true);
-			// echo $this->langSwitch();
-			// echo $this->breadcrumbs();
-			// echo $this->sidebar();
-			// echo $this->footerMenu();
-			// echo $this->footer();
+			$tpl->set('content', $content);
+
+			// sets page text content (don't get confused by double content replacement - it is a different content tag this time)
+			$pageText = new Template(_PAGES_DIR . '/' . $this->lang . '/' . $page['template']);
+			$this->preprocessContent($pageText);
+
+			$tpl = new Template($tpl->output(), true);
+			$tpl->set('content', $pageText->output());
+
+			return $tpl->output();
 		}
 	}
 }
