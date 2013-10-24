@@ -32,27 +32,31 @@
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)/$ $1 [R=301,L]
 
-# Custom error pages (404 is handled directly by PHP)
+# Custom error pages
 ErrorDocument 401 /index.php?err=401
 ErrorDocument 403 /index.php?err=403
+ErrorDocument 404 /index.php?err=404
 ErrorDocument 500 /index.php?err=500
 
-# Rewrite rules with language selection
-RewriteRule ^([a-zA-Z]{2,2})$ index.php?lang=$1
-RewriteRule ^([a-zA-Z]{2,2})/([a-zA-Z0-9_\-]+)$ index.php?lang=$1&page=$2
-RewriteRule ^([a-zA-Z]{2,2})/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?lang=$1&page=$2&param1=$3
-RewriteRule ^([a-zA-Z]{2,2})/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?lang=$1&page=$2&param1=$3&param2=$4
-
-# Rewrite rules with default language
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-#RewriteRule ^(.*)$ index.php?page=$1
-RewriteRule ^([a-zA-Z0-9_\-]+)$ index.php?page=$1
-RewriteRule ^([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?page=$1&param1=$2
-RewriteRule ^([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?page=$1&param1=$2&param2=$3
 
+# Rewrite rule for a contact URL (forms)
+RewriteRule ^form/send$ form.php
 
+# Rewrite rules with language selection
+RewriteRule ^([a-zA-Z]{2,2})$ index.php?lang=$1 [QSA]
+RewriteRule ^([a-zA-Z]{2,2})/([a-zA-Z0-9_\-]+)$ index.php?lang=$1&page=$2 [QSA]
+RewriteRule ^([a-zA-Z]{2,2})/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?lang=$1&page=$2&param1=$3 [QSA]
+RewriteRule ^([a-zA-Z]{2,2})/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?lang=$1&page=$2&param1=$3&param2=$4 [QSA]
+RewriteRule ^([a-zA-Z]{2,2})/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?lang=$1&page=$2&param1=$3&param2=$4&param3=$5 [QSA]
 
+# Rewrite rules with default language
+#RewriteRule ^(.*)$ index.php?page=$1 [QSA]
+RewriteRule ^([a-zA-Z0-9_\-]+)$ index.php?page=$1 [QSA]
+RewriteRule ^([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?page=$1&param1=$2 [QSA]
+RewriteRule ^([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?page=$1&param1=$2&param2=$3 [QSA]
+RewriteRule ^([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)/([a-zA-Z0-9_\-]+)$ index.php?page=$1&param1=$2&param2=$3&param3=$4 [QSA]
 
 # Use following rule, if you need to keep the query as /home?err=foo => /index.php?page=home&err=foo
 # RewriteRule ^(.*)$ index.php?page=$1 [L, QSA]

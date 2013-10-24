@@ -2,7 +2,7 @@
 /**
  * Simple-AcID configuration file.
  *
- * @author      Jan Myler <honza.myler@gmail.com>
+ * @author      Jan Myler <info@janmyler.com>
  * @copyright   Copyright 2012, Jan Myler (http://janmyler.com)
  *
  */
@@ -10,16 +10,23 @@
 // debug on/off
 define("_DEBUG", true);
 
+// max execution time limit (mainly for gallery purposes)
+define("_MAX_TIME_LIMIT", 60 * 3);
+
 // folders config
-define("_PATH", $_SERVER['DOCUMENT_ROOT'] . "/");
+define("_PATH", 'http://' . $_SERVER['HTTP_HOST'] . "/");
 define("_TEMPLATES_DIR", "templates/layout");
 define("_PAGES_DIR", "templates/content");
+define("_GALLERY_DIR", "photos/");
 
 // global meta tags config
 define("_AUTHOR", "Jan Myler");
 define("_DESCRIPTION", "");
 define("_KEYWORDS", "");
 define("_TITLE", "Simple-AcID");
+
+// web specific defines
+define("_EMAIL", "info@janmyler.com");
 
 // Google Analytics UA code
 define("_GA", "");
@@ -39,6 +46,39 @@ $langs = array(
 	"en" => array(
 		"title" => "English",
 		"code" => "en-us",
+	),
+);
+
+// security salt (64 characters long)
+define("_SSALT", "dUX6T=V*db@G%8%DLQS)qUmdfKj9J@+!2yM7_jf-@vHK@83c5-tXucgnE)@Q+FA*");
+
+// DB settings
+define("_DB_SERVER", "localhost");
+define("_DB_DTB", "");
+define("_DB_LOGIN", "");
+define("_DB_PASS", "");
+
+// gallery images sizes and configs
+define("_THUMB_NAME", "thumb.jpg");
+define("_THUMB_SIZE_W", 150);
+define("_THUMB_SIZE_H", 150);
+
+$sizes = array(
+	'_f' => array(
+		'w' => 1280,
+		'h' => 1024,
+	),
+	'_n' => array(
+		'w' => 212,
+		'h' => 212,
+	),
+	'_s' => array(
+		'w' => 100,
+		'h' => 100,
+	),
+	'_t' => array(
+		'w' => 80,
+		'h' => 80,
 	),
 );
 
@@ -154,10 +194,32 @@ $msg = array(
 		"cz" => "Očekáván typ Template.",
 		"en" => "Expected type Template.",
 	),
-
+	"GALLERY_NO_PHOTOS" => array(
+		"cz" => "Galerie neobsahuje žádné fotky.",
+		"en" => "This gallery is empty.",
+	),
+	'GALLERY_NO_ROOTDIR' => array(
+		"cz" => "Složka galerie neexistuje.",
+		"en" => "Gallery root directory does not exist.",
+	),
+	'FORM_UNKNOWN_VALIDATION' => array(
+		"cz" => "Neznámé pravidlo validace.",
+		"en" => "Unknow validation rule.",
+	),
+	'EMAIL_SEND_ERROR' => array(
+		"cz" => "Jejda, došlo k chybě. Vaše zpráva nebyla odeslána. Zkuste to prosím znovu.",
+		"en" => "Oops! An error occured. Your message has not been sent. Please, try it again.",
+	),
+	'EMAIL_SEND_OK' => array(
+		"cz" => "Vaše zpráva byla odeslána, děkujeme.",
+		"en" => "Your message has been sent. Thank you!",
+	),
 );
 
 // outputs messages in particular language
 function _t($code) {
-	return (array_key_exists($code, $GLOBALS["msg"])) ? $msg[$code][$web->getLang] : "";
+	$web = Web::getInstance();
+	$msg = $GLOBALS['msg'];
+
+	return (array_key_exists($code, $msg)) ? $msg[$code][$web->getLang()] : "";
 }
